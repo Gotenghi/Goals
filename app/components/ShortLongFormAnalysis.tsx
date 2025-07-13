@@ -130,7 +130,7 @@ const ShortLongFormAnalysis = () => {
         <div className="text-center text-red-500">
           데이터를 불러올 수 없습니다.
           <button 
-            onClick={fetchData}
+            onClick={() => fetchData()}
             className="ml-2 px-3 py-1 bg-red-600 text-white rounded text-sm hover:bg-red-700"
           >
             다시 시도

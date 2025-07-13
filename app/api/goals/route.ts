@@ -1,17 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseClient } from '@/lib/supabase'
 
 export async function GET(request: NextRequest) {
   try {
-    // Supabase 클라이언트 확인
-    if (!supabase) {
-      console.log('Supabase 클라이언트가 초기화되지 않았습니다. 환경 변수를 확인하세요.')
-      return NextResponse.json({ 
-        error: 'Supabase 설정이 필요합니다',
-        sections: [],
-        message: 'Supabase 환경 변수 설정이 필요합니다'
-      }, { status: 500 })
-    }
+    // Supabase 클라이언트 가져오기
+    const supabase = getSupabaseClient()
 
     // 모든 활성 섹션 조회
     const { data: sections, error: sectionsError } = await supabase
@@ -138,14 +131,8 @@ export async function POST(request: NextRequest) {
   try {
     console.log('🚀 POST /api/goals 요청 받음')
     
-    // Supabase 클라이언트 확인
-    if (!supabase) {
-      console.error('❌ Supabase 클라이언트가 없습니다')
-      return NextResponse.json({ 
-        error: 'Supabase 설정이 필요합니다',
-        details: 'Supabase 환경 변수를 확인해주세요'
-      }, { status: 500 })
-    }
+    // Supabase 클라이언트 가져오기
+    const supabase = getSupabaseClient()
 
     const body = await request.json()
     console.log('📝 요청 본문:', JSON.stringify(body, null, 2))
@@ -370,13 +357,8 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    // Supabase 클라이언트 확인
-    if (!supabase) {
-      return NextResponse.json({ 
-        error: 'Supabase 설정이 필요합니다',
-        details: 'Supabase 환경 변수를 확인해주세요'
-      }, { status: 500 })
-    }
+    // Supabase 클라이언트 가져오기
+    const supabase = getSupabaseClient()
 
     const body = await request.json()
     const { type, id, data } = body
@@ -496,13 +478,8 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    // Supabase 클라이언트 확인
-    if (!supabase) {
-      return NextResponse.json({ 
-        error: 'Supabase 설정이 필요합니다',
-        details: 'Supabase 환경 변수를 확인해주세요'
-      }, { status: 500 })
-    }
+    // Supabase 클라이언트 가져오기
+    const supabase = getSupabaseClient()
 
     const body = await request.json()
     const { type, id } = body

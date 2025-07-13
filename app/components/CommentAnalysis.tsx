@@ -150,7 +150,7 @@ const CommentAnalysis = () => {
           <h3 className="heading-4 text-danger-700 mb-2">데이터 로드 실패</h3>
           <p className="body-base text-danger-600 mb-6">댓글 데이터를 불러올 수 없습니다.</p>
           <button 
-            onClick={fetchData}
+            onClick={() => fetchData()}
             className="btn-primary"
           >
             <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

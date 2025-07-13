@@ -14,6 +14,14 @@ export const supabase = supabaseUrl && supabaseAnonKey
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null
 
+// Non-null assertion을 위한 타입 가드
+export function getSupabaseClient() {
+  if (!supabase) {
+    throw new Error('Supabase client is not initialized. Check your environment variables.')
+  }
+  return supabase
+}
+
 // Supabase 사용 가능 여부 확인
 export const isSupabaseEnabled = !!supabase
 

@@ -20,7 +20,9 @@ import {
   Trash2,
   Calendar,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  CheckCircle,
+  Circle
 } from 'lucide-react'
 import { formatNumber } from '@/lib/utils'
 

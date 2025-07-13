@@ -362,8 +362,8 @@ export default function Dashboard() {
         })
         
         // 하위 목표들 저장
-        if (goal.subGoals) {
-          for (const subGoal of goal.subGoals) {
+        if (goal.subGoals?.length) {
+          for (const subGoal of goal.subGoals!) {
             await fetch('/api/goals', {
               method: 'POST',
               headers: {
