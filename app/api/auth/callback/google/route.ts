@@ -4,10 +4,14 @@ import { getSupabaseClient } from '@/lib/supabase'
 
 // Google OAuth 클라이언트 설정
 const getOAuthClient = () => {
+  const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
+    ? `https://${process.env.VERCEL_URL}` 
+    : 'http://localhost:3000'
+  
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/callback/google`
+    `${baseUrl}/api/auth/callback/google`
   )
 }
 
@@ -18,7 +22,9 @@ export async function GET(request: NextRequest) {
     const error = url.searchParams.get('error')
     
     // 배포된 URL로 리디렉션하도록 수정
-    const baseUrl = process.env.NEXTAUTH_URL || url.origin
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : url.origin
 
     if (error) {
       console.error('OAuth 인증 오류:', error)
@@ -76,7 +82,9 @@ export async function GET(request: NextRequest) {
     
   } catch (error) {
     console.error('OAuth 콜백 처리 실패:', error)
-    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin
+    const baseUrl = process.env.NEXTAUTH_URL || process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : new URL(request.url).origin
     return NextResponse.redirect(`${baseUrl}/?auth=error`)
   }
 } 
