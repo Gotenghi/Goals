@@ -402,56 +402,44 @@ export async function GET(request: NextRequest) {
     if (!accessToken) {
       console.log('액세스 토큰이 없습니다. 리프레시 토큰으로 갱신을 시도합니다.')
       
-      // 리프레시 토큰도 없는 경우
-      if (!refreshToken) {
-        console.log('리프레시 토큰도 없습니다. Mock 데이터를 반환합니다.')
-        return NextResponse.json({
-          todaysHighlights: getMockTodaysHighlights(),
-          ideaRequests: getMockIdeaRequests(),
-          recentComments: getMockRecentComments(),
-          sentimentStats: getMockSentimentStats(),
-          topKeywords: getMockTopKeywords(),
-          isAuthenticated: false,
-          needsReAuth: true,
-          message: '🚀 관리자가 YouTube 인증을 해주세요. 인증 후 모든 팀원이 댓글 데이터를 볼 수 있습니다!'
-        })
-      }
-      
-      // 리프레시 토큰이 있는 경우 갱신 시도 로직 추가 가능
-      return NextResponse.json({
-        todaysHighlights: getMockTodaysHighlights(),
-        ideaRequests: getMockIdeaRequests(),
-        recentComments: getMockRecentComments(),
-        sentimentStats: getMockSentimentStats(),
-        topKeywords: getMockTopKeywords(),
-        isAuthenticated: false,
-        needsReAuth: true,
-        message: '토큰 갱신에 실패했습니다. 관리자가 YouTube 재인증을 해주세요.'
-      })
+             // 리프레시 토큰도 없는 경우
+       if (!refreshToken) {
+         console.log('리프레시 토큰도 없습니다. Mock 데이터를 반환합니다.')
+         const mockData = getMockCommentData()
+         return NextResponse.json({
+           ...mockData,
+           isAuthenticated: false,
+           needsReAuth: true,
+           message: '🚀 관리자가 YouTube 인증을 해주세요. 인증 후 모든 팀원이 댓글 데이터를 볼 수 있습니다!'
+         })
+       }
+       
+       // 리프레시 토큰이 있는 경우 갱신 시도 로직 추가 가능
+       const mockData = getMockCommentData()
+       return NextResponse.json({
+         ...mockData,
+         isAuthenticated: false,
+         needsReAuth: true,
+         message: '토큰 갱신에 실패했습니다. 관리자가 YouTube 재인증을 해주세요.'
+       })
     }
 
-    // 실제 YouTube API 호출 로직은 기존과 동일
-    // ... existing YouTube API call logic ...
-    
-    return NextResponse.json({
-      todaysHighlights: getMockTodaysHighlights(),
-      ideaRequests: getMockIdeaRequests(),
-      recentComments: getMockRecentComments(),
-      sentimentStats: getMockSentimentStats(),
-      topKeywords: getMockTopKeywords(),
-      isAuthenticated: true,
-      message: '✅ 팀 공유 댓글 데이터 로드 완료!'
-    })
+         // 실제 YouTube API 호출 로직은 기존과 동일
+     // ... existing YouTube API call logic ...
+     
+     const mockData = getMockCommentData()
+     return NextResponse.json({
+       ...mockData,
+       isAuthenticated: true,
+       message: '✅ 팀 공유 댓글 데이터 로드 완료!'
+     })
 
   } catch (error) {
     console.error('댓글 분석 API 오류:', error)
     
+    const mockData = getMockCommentData()
     return NextResponse.json({
-      todaysHighlights: getMockTodaysHighlights(),
-      ideaRequests: getMockIdeaRequests(),
-      recentComments: getMockRecentComments(),
-      sentimentStats: getMockSentimentStats(),
-      topKeywords: getMockTopKeywords(),
+      ...mockData,
       isAuthenticated: false,
       error: '서버 오류가 발생했습니다.',
       message: 'Mock 데이터를 표시합니다.'
