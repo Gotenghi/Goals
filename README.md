@@ -1,6 +1,6 @@
 # 웃소 목표 대시보드 🎯
 
-웃소 팀의 2025년 3분기 목표 추적을 위한 실시간 대시보드입니다.
+YouTube Analytics 기반의 실시간 목표 관리 및 팀 성과 추적 대시보드입니다.
 
 ## 📋 주요 기능
 
@@ -15,6 +15,27 @@
 - 일일 발행량 2.5개 목표
 - 구독자 순증 10만명 목표
 - 인스타그램 팔로워 3,200명 목표
+
+### 📊 **실시간 YouTube Analytics**
+- 월간 조회수, 시청시간, 구독자 수 등 핵심 지표
+- 실제 YouTube Data API 연동
+- 성장률 및 트렌드 분석
+
+### 🎯 **목표 관리 시스템**
+- 3분기 목표 설정 및 추적
+- 하위 목표 및 세부 실행 계획
+- 진행률 시각화 및 달성률 계산
+- **데이터베이스 저장**으로 팀원 간 공유 가능
+
+### 👥 **팀 성과 관리**
+- 팀원별 레벨 및 경험치 시스템
+- 주간 목표 완료도 추적
+- 개별 성과 지표 관리
+
+### 🏆 **게이미피케이션 업적 시스템**
+- 구독자, 조회수, 수익 등 다양한 업적
+- 희귀도별 업적 분류
+- 실시간 업적 달성 알림
 
 ### 👥 팀별 진행 상황
 - 10명 팀원의 개별 과제 추적
@@ -34,6 +55,10 @@
 - **Database**: Supabase
 - **Charts**: Recharts
 - **Icons**: Lucide React
+- **Backend**: Next.js API Routes
+- **Authentication**: Google OAuth 2.0
+- **API**: YouTube Data API v3
+- **Deployment**: Vercel
 
 ## 📦 설치 및 실행
 
@@ -50,6 +75,11 @@ yarn install
 \`\`\`env
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# YouTube API
+YOUTUBE_CLIENT_ID=your_youtube_client_id
+YOUTUBE_CLIENT_SECRET=your_youtube_client_secret
+YOUTUBE_REDIRECT_URI=http://localhost:3000/api/auth/callback/google
 \`\`\`
 
 ### 3. 개발 서버 실행
@@ -171,4 +201,128 @@ yarn dev
 
 ---
 
-**웃소 화이팅! �� 함께 목표를 달성해봅시다!** 
+**웃소 화이팅! 함께 목표를 달성해봅시다!** 
+
+## 🎯 데이터베이스 설정 및 배포
+
+### 데이터베이스 설정
+
+#### Supabase 프로젝트 생성
+1. [Supabase](https://supabase.com)에서 새 프로젝트 생성
+2. SQL Editor에서 `database/schema.sql` 실행
+3. 샘플 데이터 필요시 `database/sample-data.sql` 실행
+
+#### 데이터베이스 스키마
+```sql
+-- 주요 테이블들
+- goal_sections: 목표 섹션 (예: "2025년 3분기 목표")
+- goals: 메인 목표
+- sub_goals: 하위 목표
+- team_members: 팀원 정보
+- team_goals: 팀 목표
+- achievement_definitions: 업적 정의
+- achievement_records: 업적 달성 기록
+```
+
+### YouTube API 설정
+1. [Google Cloud Console](https://console.cloud.google.com/)에서 프로젝트 생성
+2. YouTube Data API v3 활성화
+3. OAuth 2.0 클라이언트 ID 생성
+4. 승인된 리디렉션 URI 추가: `http://localhost:3000/api/auth/callback/google`
+
+### 배포 (Vercel)
+
+#### 1. GitHub 레포지토리 연결
+```bash
+git add .
+git commit -m "Initial commit"
+git push origin main
+```
+
+#### 2. Vercel 배포
+1. [Vercel](https://vercel.com)에서 GitHub 레포지토리 연결
+2. 환경 변수 설정:
+   ```
+   YOUTUBE_CLIENT_ID=your_youtube_client_id
+   YOUTUBE_CLIENT_SECRET=your_youtube_client_secret
+   YOUTUBE_REDIRECT_URI=https://your-domain.vercel.app/api/auth/callback/google
+   NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+   ```
+3. 배포 완료 후 YouTube API 리디렉션 URI 업데이트
+
+#### 3. 팀원 접근 설정
+- 배포된 URL을 팀원들과 공유
+- 모든 팀원이 동일한 목표 데이터를 볼 수 있음
+- 실시간 목표 업데이트 및 진행률 공유
+
+## 🎯 데이터 흐름
+
+### 목표 관리
+1. **생성**: 관리자가 목표 생성 → Supabase 저장
+2. **조회**: 모든 팀원이 실시간 목표 데이터 조회
+3. **업데이트**: 진행률 업데이트 → 자동 동기화
+4. **공유**: 팀원 간 실시간 목표 상태 공유
+
+### 데이터 저장소 변경
+- **이전**: localStorage (브라우저 종속적)
+- **현재**: Supabase (클라우드 데이터베이스)
+- **장점**: 
+  - 팀원 간 데이터 공유
+  - 데이터 영구 보존
+  - 다중 기기 접근 가능
+  - 실시간 동기화
+
+## �� API 엔드포인트
+
+### 목표 관리
+- `GET /api/goals` - 목표 목록 조회
+- `POST /api/goals` - 목표 생성/수정
+- `PUT /api/goals` - 목표 업데이트
+- `DELETE /api/goals` - 목표 삭제
+
+### 팀 관리
+- `GET /api/team` - 팀원 및 팀 목표 조회
+- `POST /api/team` - 팀원/팀 목표 생성
+- `PUT /api/team` - 팀 데이터 업데이트
+- `DELETE /api/team` - 팀 데이터 삭제
+
+### 업적 시스템
+- `GET /api/achievements` - 업적 목록 조회
+- `POST /api/achievements` - 업적 생성
+- `PUT /api/achievements` - 업적 진행도 업데이트
+- `DELETE /api/achievements` - 업적 삭제
+
+### YouTube Analytics
+- `GET /api/youtube/analytics` - YouTube 데이터 조회
+- `GET /api/auth/callback/google` - OAuth 인증
+
+## 🎯 문제 해결
+
+### 일반적인 문제들
+
+1. **YouTube API 인증 실패**
+   - OAuth 설정 확인
+   - 리디렉션 URI 정확성 검증
+   - API 키 유효성 확인
+
+2. **데이터베이스 연결 실패**
+   - Supabase URL 및 키 확인
+   - RLS 정책 설정 확인
+   - 네트워크 연결 상태 확인
+
+3. **목표 데이터 동기화 문제**
+   - 브라우저 새로고침
+   - API 응답 상태 확인
+   - 데이터베이스 로그 검토
+
+## �� 기여 방법
+
+1. Fork 프로젝트
+2. Feature 브랜치 생성
+3. 변경 사항 커밋
+4. Pull Request 생성
+
+## 🎯 라이선스
+
+MIT License 

@@ -157,3 +157,65 @@ npm run dev
 ---
 
 **웃소 화이팅! 🎯 목표 달성을 위해 함께 노력해요!** 
+
+npm run dev
+
+앱이 http://localhost:3000 에서 실행됩니다.
+
+## Supabase 데이터베이스 설정
+
+### 1. UUID 확장 기능 활성화
+
+Supabase SQL Editor에서 다음 명령을 실행하세요:
+
+```sql
+-- UUID 생성을 위한 확장 기능 활성화
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+```
+
+### 2. 데이터베이스 스키마 적용
+
+`database/schema.sql` 파일의 전체 내용을 Supabase SQL Editor에 복사하여 실행하세요.
+
+### 3. 샘플 데이터 생성 (선택사항)
+
+`database/sample-data.sql` 파일의 내용을 실행하거나, 또는 애플리케이션에서 다음과 같이 실행할 수 있습니다:
+
+1. 브라우저에서 애플리케이션 열기
+2. 개발자 도구 콘솔 열기 (F12)
+3. 다음 코드 실행:
+
+```javascript
+// 샘플 데이터 생성
+fetch('/api/setup', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ action: 'create_sample_data' })
+})
+.then(res => res.json())
+.then(data => console.log('샘플 데이터 생성 결과:', data))
+```
+
+### 4. 문제 해결
+
+#### UUID 생성 오류가 발생하는 경우
+
+만약 여전히 UUID 관련 오류가 발생한다면, Supabase 대시보드에서:
+
+1. Database → Extensions 메뉴로 이동
+2. "uuid-ossp" 확장 기능이 활성화되어 있는지 확인
+3. 비활성화되어 있다면 활성화
+
+#### RLS (Row Level Security) 정책 확인
+
+데이터가 조회되지 않는다면:
+
+1. Supabase 대시보드에서 Authentication → Policies 확인
+2. 각 테이블에 대한 정책이 올바르게 설정되어 있는지 확인
+3. 필요시 `database/schema.sql`의 RLS 정책 부분을 다시 실행
+
+## 사용 방법
+
+1. 대시보드 페이지 접속: http://localhost:3000
+2. 목표 관리: 목표 카드의 편집 버튼을 클릭하여 수정
+3. 팀 진행 상황: 팀원별 성과 및 작업 현황 확인 

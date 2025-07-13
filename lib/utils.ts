@@ -5,18 +5,147 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-// 숫자 포맷팅 함수
-export function formatNumber(num: number): string {
+export const formatNumber = (num: number) => {
   if (num >= 100000000) {
     return `${(num / 100000000).toFixed(1)}억`
   }
   if (num >= 10000) {
-    return `${(num / 10000).toFixed(0)}만`
-  }
-  if (num >= 1000) {
-    return `${(num / 1000).toFixed(1)}K`
+    return `${(num / 10000).toFixed(1)}만`
   }
   return num.toLocaleString()
+}
+
+export const formatWatchTime = (minutes: number) => {
+  const hours = Math.floor(minutes / 60)
+  if (hours >= 10000) {
+    return `${(hours / 10000).toFixed(1)}만시간`
+  }
+  return `${hours.toLocaleString()}시간`
+}
+
+// YouTube API 캐싱 유틸리티
+export interface CachedData<T> {
+  data: T
+  timestamp: number
+  expiresAt: number
+}
+
+export const CACHE_DURATION = {
+  YOUTUBE_ANALYTICS: 2 * 60 * 60 * 1000, // 2시간
+  YOUTUBE_COMMENTS: 4 * 60 * 60 * 1000, // 4시간
+  YOUTUBE_CHANNEL: 6 * 60 * 60 * 1000,  // 6시간
+}
+
+export const getCachedData = <T>(key: string): T | null => {
+  if (typeof window === 'undefined') return null
+  
+  try {
+    const cached = localStorage.getItem(key)
+    if (!cached) return null
+    
+    const parsedCache: CachedData<T> = JSON.parse(cached)
+    const now = Date.now()
+    
+    if (now > parsedCache.expiresAt) {
+      localStorage.removeItem(key)
+      return null
+    }
+    
+    return parsedCache.data
+  } catch (error) {
+    console.error('캐시 데이터 읽기 실패:', error)
+    return null
+  }
+}
+
+export const setCachedData = <T>(key: string, data: T, duration: number = CACHE_DURATION.YOUTUBE_ANALYTICS): void => {
+  if (typeof window === 'undefined') return
+  
+  try {
+    const now = Date.now()
+    const cachedData: CachedData<T> = {
+      data,
+      timestamp: now,
+      expiresAt: now + duration
+    }
+    
+    localStorage.setItem(key, JSON.stringify(cachedData))
+  } catch (error) {
+    console.error('캐시 데이터 저장 실패:', error)
+  }
+}
+
+export const clearCachedData = (key: string): void => {
+  if (typeof window === 'undefined') return
+  
+  try {
+    localStorage.removeItem(key)
+  } catch (error) {
+    console.error('캐시 데이터 삭제 실패:', error)
+  }
+}
+
+export const isCacheValid = (key: string): boolean => {
+  if (typeof window === 'undefined') return false
+  
+  try {
+    const cached = localStorage.getItem(key)
+    if (!cached) return false
+    
+    const parsedCache: CachedData<any> = JSON.parse(cached)
+    return Date.now() < parsedCache.expiresAt
+  } catch (error) {
+    return false
+  }
+}
+
+export const getCacheInfo = (key: string): { isValid: boolean; remainingTime: number } | null => {
+  if (typeof window === 'undefined') return null
+  
+  try {
+    const cached = localStorage.getItem(key)
+    if (!cached) return null
+    
+    const parsedCache: CachedData<any> = JSON.parse(cached)
+    const now = Date.now()
+    const remainingTime = parsedCache.expiresAt - now
+    
+    return {
+      isValid: remainingTime > 0,
+      remainingTime: Math.max(0, remainingTime)
+    }
+  } catch (error) {
+    return null
+  }
+}
+
+// 영상 길이 포맷팅 유틸리티 함수
+export function formatDuration(seconds: number | undefined | null): string {
+  if (seconds === undefined || seconds === null || isNaN(seconds)) {
+    return '0:00'
+  }
+  const hours = Math.floor(seconds / 3600)
+  const minutes = Math.floor((seconds % 3600) / 60)
+  const secs = seconds % 60
+
+  if (hours > 0) {
+    return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`
+  }
+  return `${minutes}:${secs.toString().padStart(2, '0')}`
+}
+
+// 성장률 색상 유틸리티 함수
+export function getGrowthColor(rate: number): string {
+  if (rate > 0) return 'text-success-600'
+  if (rate < 0) return 'text-danger-600'
+  return 'text-neutral-600'
+}
+
+// 성장률 아이콘 유틸리티 함수 (React 컴포넌트는 별도 처리 필요)
+export function getGrowthDirection(rate: number): 'up' | 'down' | 'neutral' {
+  if (rate > 0) return 'up'
+  if (rate < 0) return 'down'
+  return 'neutral'
 }
 
 // 진행률 계산 함수
