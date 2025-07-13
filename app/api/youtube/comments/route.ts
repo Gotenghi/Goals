@@ -31,10 +31,13 @@ async function getSharedYouTubeTokens() {
 
 // OAuth 클라이언트 설정
 const getOAuthClient = () => {
+  const baseUrl = process.env.NEXTAUTH_URL || 
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    process.env.GOOGLE_REDIRECT_URI
+    `${baseUrl}/api/auth/callback/google`
   )
 }
 
