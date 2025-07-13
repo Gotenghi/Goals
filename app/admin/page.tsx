@@ -295,7 +295,8 @@ export default function AdminPage() {
       }
     } catch (error: any) {
       console.error('데이터베이스 초기화 오류:', error)
-      alert(`데이터베이스 초기화 중 오류가 발생했습니다: ${error.message || JSON.stringify(error)}`)
+      const errorMessage = error instanceof Error ? error.message : JSON.stringify(error)
+      alert(`데이터베이스 초기화 중 오류가 발생했습니다: ${errorMessage}`)
     } finally {
       setDbLoading(false)
     }
@@ -867,7 +868,8 @@ export default function AdminPage() {
 
     } catch (error) {
       console.error('업적 저장 오류:', error)
-      alert(`업적 저장 중 오류가 발생했습니다: ${error.message}`)
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류'
+      alert(`업적 저장 중 오류가 발생했습니다: ${errorMessage}`)
     }
   }
 
@@ -1056,7 +1058,8 @@ export default function AdminPage() {
 
     } catch (error) {
       console.error('업적 삭제 오류:', error)
-      alert(`업적 삭제 중 오류가 발생했습니다: ${error.message}`)
+      const errorMessage = error instanceof Error ? error.message : '알 수 없는 오류'
+      alert(`업적 삭제 중 오류가 발생했습니다: ${errorMessage}`)
     }
   }
 
