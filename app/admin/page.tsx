@@ -813,7 +813,7 @@ export default function AdminPage() {
     }
   }
 
-  const updateAchievement = async (achievementId: string, field: string, value: string | number | boolean) => {
+  const updateAchievement = async (achievementId: string, field: string, value: string | number | boolean | null) => {
     try {
       // 로컬 상태 즉시 업데이트 (자동 저장 비활성화)
       setAchievements(prev => prev.map(achievement => 
