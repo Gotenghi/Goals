@@ -3,6 +3,17 @@
 -- UUID 생성을 위한 확장 기능 활성화
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
+-- 🚀 YouTube 토큰 공유 테이블 (팀 전체가 사용)
+CREATE TABLE IF NOT EXISTS youtube_tokens (
+    id TEXT PRIMARY KEY DEFAULT 'youtube_auth', -- 고정 ID로 하나의 레코드만 유지
+    access_token TEXT,
+    refresh_token TEXT,
+    expires_at TIMESTAMP WITH TIME ZONE,
+    created_by TEXT DEFAULT 'admin',
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT TIMEZONE('utc'::text, NOW()) NOT NULL
+);
+
 -- 스키마 마이그레이션: goal_sections 테이블에 order 컬럼 추가
 DO $$
 BEGIN

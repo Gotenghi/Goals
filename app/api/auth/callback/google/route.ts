@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
-import { cookies } from 'next/headers'
+import { getSupabaseClient } from '@/lib/supabase'
 
 // Google OAuth 클라이언트 설정
 const getOAuthClient = () => {
@@ -16,10 +16,13 @@ export async function GET(request: NextRequest) {
     const url = new URL(request.url)
     const code = url.searchParams.get('code')
     const error = url.searchParams.get('error')
+    
+    // 배포된 URL로 리디렉션하도록 수정
+    const baseUrl = process.env.NEXTAUTH_URL || url.origin
 
     if (error) {
       console.error('OAuth 인증 오류:', error)
-      return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/?auth=error`)
+      return NextResponse.redirect(`${baseUrl}/?auth=error`)
     }
 
     if (!code) {
@@ -28,44 +31,52 @@ export async function GET(request: NextRequest) {
 
     console.log('=== OAuth 콜백 처리 ===')
     console.log('받은 code:', code.substring(0, 20) + '...')
-    console.log('전체 URL:', request.url)
+    console.log('리디렉션 URL:', baseUrl)
 
     const oauth2Client = getOAuthClient()
-    
-    // OAuth 클라이언트 설정 확인
-    console.log('OAuth 클라이언트 설정 완료')
     
     // 인증 코드를 액세스 토큰으로 교환
     console.log('토큰 교환 시도 중...')
     const { tokens } = await oauth2Client.getToken(code)
     console.log('토큰 교환 성공:', !!tokens.access_token)
     
-    // 토큰을 쿠키에 저장 (실제 운영에서는 더 안전한 방법 사용)
-    const cookieStore = cookies()
-    
-    if (tokens.access_token) {
-      cookieStore.set('youtube_access_token', tokens.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 3600 // 1시간
-      })
-    }
-    
-    if (tokens.refresh_token) {
-      cookieStore.set('youtube_refresh_token', tokens.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 30 * 24 * 60 * 60 // 30일
-      })
+    // 🚀 팀 공유를 위해 Supabase에 토큰 저장
+    try {
+      const supabase = getSupabaseClient()
+      
+      const tokenData = {
+        id: 'youtube_auth', // 고정 ID로 하나의 레코드만 유지
+        access_token: tokens.access_token || null,
+        refresh_token: tokens.refresh_token || null,
+        expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
+        updated_at: new Date().toISOString(),
+        created_by: 'admin' // 인증한 관리자 표시
+      }
+
+      // upsert를 사용해서 기존 토큰 업데이트 또는 새로 생성
+      const { error: dbError } = await supabase
+        .from('youtube_tokens')
+        .upsert(tokenData, { onConflict: 'id' })
+
+      if (dbError) {
+        console.error('토큰 저장 실패:', dbError)
+        // 저장 실패해도 인증은 성공이므로 계속 진행
+      } else {
+        console.log('✅ YouTube 토큰이 팀 공유 저장소에 저장되었습니다!')
+      }
+    } catch (dbError) {
+      console.error('데이터베이스 저장 오류:', dbError)
+      // 저장 실패해도 인증은 성공
     }
 
-    console.log('YouTube OAuth 인증 성공!')
+    console.log('🎉 YouTube OAuth 인증 성공! 이제 모든 팀원이 데이터를 볼 수 있습니다.')
     
-    // 메인 페이지로 리다이렉트
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/?auth=success`)
+    // 성공 시 메인 페이지로 리다이렉트
+    return NextResponse.redirect(`${baseUrl}/?auth=success`)
     
   } catch (error) {
     console.error('OAuth 콜백 처리 실패:', error)
-    return NextResponse.redirect(`${process.env.NEXTAUTH_URL}/?auth=error`)
+    const baseUrl = process.env.NEXTAUTH_URL || new URL(request.url).origin
+    return NextResponse.redirect(`${baseUrl}/?auth=error`)
   }
 } 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { google } from 'googleapis'
-import { cookies } from 'next/headers'
+import { getSupabaseClient } from '@/lib/supabase'
 
 // Google OAuth 클라이언트 설정
 const getOAuthClient = () => {
@@ -11,7 +11,61 @@ const getOAuthClient = () => {
   )
 }
 
-// 토큰 갱신 함수
+// 🚀 팀 공유 토큰 가져오기 (Supabase에서)
+async function getSharedYouTubeTokens() {
+  try {
+    const supabase = getSupabaseClient()
+    
+    const { data, error } = await supabase
+      .from('youtube_tokens')
+      .select('*')
+      .eq('id', 'youtube_auth')
+      .single()
+
+    if (error) {
+      console.log('저장된 YouTube 토큰이 없습니다:', error.message)
+      return null
+    }
+
+    return {
+      access_token: data.access_token,
+      refresh_token: data.refresh_token,
+      expires_at: data.expires_at
+    }
+  } catch (error) {
+    console.error('토큰 조회 실패:', error)
+    return null
+  }
+}
+
+// 🚀 팀 공유 토큰 저장하기 (Supabase에)
+async function saveSharedYouTubeTokens(tokens: any) {
+  try {
+    const supabase = getSupabaseClient()
+    
+    const tokenData = {
+      id: 'youtube_auth',
+      access_token: tokens.access_token || null,
+      refresh_token: tokens.refresh_token || null,
+      expires_at: tokens.expiry_date ? new Date(tokens.expiry_date).toISOString() : null,
+      updated_at: new Date().toISOString()
+    }
+
+    const { error } = await supabase
+      .from('youtube_tokens')
+      .upsert(tokenData, { onConflict: 'id' })
+
+    if (error) {
+      console.error('토큰 저장 실패:', error)
+    } else {
+      console.log('✅ 팀 공유 토큰 업데이트 완료')
+    }
+  } catch (error) {
+    console.error('토큰 저장 오류:', error)
+  }
+}
+
+// 토큰 갱신 함수 (팀 공유용으로 수정)
 async function refreshAccessToken(refreshToken: string) {
   try {
     const oauth2Client = getOAuthClient()
@@ -20,15 +74,8 @@ async function refreshAccessToken(refreshToken: string) {
     const { credentials } = await oauth2Client.refreshAccessToken()
     console.log('토큰 갱신 성공:', !!credentials.access_token)
     
-    // 새 액세스 토큰을 쿠키에 저장
-    const cookieStore = cookies()
-    if (credentials.access_token) {
-      cookieStore.set('youtube_access_token', credentials.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 3600 // 1시간
-      })
-    }
+    // 🚀 새 액세스 토큰을 팀 공유 저장소에 저장
+    await saveSharedYouTubeTokens(credentials)
     
     return credentials.access_token
   } catch (error) {
@@ -618,9 +665,12 @@ function getMockData() {
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = cookies()
-    let accessToken = cookieStore.get('youtube_access_token')?.value
-    const refreshToken = cookieStore.get('youtube_refresh_token')?.value
+    console.log('💬 YouTube Analytics API 호출됨')
+    
+    // 🚀 팀 공유 토큰 가져오기
+    const sharedTokens = await getSharedYouTubeTokens()
+    let accessToken = sharedTokens?.access_token
+    const refreshToken = sharedTokens?.refresh_token
 
     // 액세스 토큰이 없으면 리프레시 토큰으로 갱신 시도
     if (!accessToken && refreshToken) {
@@ -640,7 +690,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (!accessToken) {
-      console.log('사용 가능한 토큰이 없습니다. Mock 데이터를 반환합니다.')
+      console.log('리프레시 토큰도 없습니다. Mock 데이터를 반환합니다.')
       const { analytics, channelStats } = getMockData()
       return NextResponse.json({ 
         analytics, 
@@ -648,8 +698,8 @@ export async function GET(request: NextRequest) {
         isAuthenticated: false,
         needsReAuth: !refreshToken, // 리프레시 토큰도 없으면 재인증 필요
         message: refreshToken 
-          ? '토큰 갱신에 실패했습니다. /api/auth/callback로 이동하여 재인증하세요.'
-          : 'YouTube 인증이 필요합니다. /api/auth/callback로 이동하여 인증하세요.'
+          ? '토큰 갱신에 실패했습니다. 관리자가 YouTube 재인증을 해주세요.'
+          : '🚀 관리자가 YouTube 인증을 해주세요. 인증 후 모든 팀원이 데이터를 볼 수 있습니다!'
       })
     }
 
@@ -661,47 +711,50 @@ export async function GET(request: NextRequest) {
         analytics, 
         channelStats,
         isAuthenticated: true,
-        message: '실제 YouTube Analytics 데이터입니다.'
+        message: '✅ 팀 공유 YouTube 데이터 로드 완료!'
       })
     } catch (apiError: any) {
-      // API 호출 실패시 토큰 갱신 시도
-      if (apiError.message?.includes('401') || apiError.message?.includes('Invalid Credentials')) {
-        console.log('API 호출 실패 - 토큰 만료로 추정됩니다. 갱신을 시도합니다.')
-        
-        if (refreshToken) {
-          try {
-            const newAccessToken = await refreshAccessToken(refreshToken)
-            if (!newAccessToken) {
-              throw new Error('토큰 갱신 실패')
-            }
-            const { analytics, channelStats } = await fetchRealYouTubeAnalytics(newAccessToken)
-            
+      console.error('YouTube API 호출 실패:', apiError)
+      
+      // 토큰이 만료된 경우 갱신 시도
+      if (apiError.code === 401 && refreshToken) {
+        console.log('토큰이 만료되었습니다. 갱신을 시도합니다.')
+        try {
+          const newToken = await refreshAccessToken(refreshToken)
+          if (newToken) {
+            const { analytics, channelStats } = await fetchRealYouTubeAnalytics(newToken)
             return NextResponse.json({ 
               analytics, 
               channelStats,
               isAuthenticated: true,
-              message: '토큰 갱신 후 실제 YouTube Analytics 데이터입니다.'
+              message: '✅ 토큰 갱신 후 데이터 로드 완료!'
             })
-          } catch (refreshError) {
-            console.error('토큰 갱신 후 재시도 실패:', refreshError)
           }
+        } catch (refreshError) {
+          console.error('토큰 갱신 실패:', refreshError)
         }
       }
       
-      throw apiError // 다른 에러는 그대로 전파
+      // API 호출 실패시 Mock 데이터 반환
+      const { analytics, channelStats } = getMockData()
+      return NextResponse.json({ 
+        analytics, 
+        channelStats,
+        isAuthenticated: false,
+        needsReAuth: true,
+        error: '데이터 로드에 실패했습니다. 관리자가 YouTube 재인증을 해주세요.',
+        message: 'YouTube API 호출 실패. Mock 데이터를 표시합니다.'
+      })
     }
-
   } catch (error) {
     console.error('YouTube Analytics API 오류:', error)
-    
-    // 오류 발생시 Mock 데이터 반환
     const { analytics, channelStats } = getMockData()
     return NextResponse.json({ 
       analytics, 
       channelStats,
       isAuthenticated: false,
-      error: '실제 데이터 로드 실패, Mock 데이터를 표시합니다.',
-      details: error instanceof Error ? error.message : '알 수 없는 오류'
+      error: '서버 오류가 발생했습니다.',
+      message: 'Mock 데이터를 표시합니다.'
     })
   }
 } 
